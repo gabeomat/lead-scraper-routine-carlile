@@ -49,7 +49,7 @@ DEFAULT_PAYLOAD = {
         "building materials",
         "construction",
         "consumer goods",
-        "electrical & electronic manufacturing",
+        "electrical/electronic manufacturing",
         "food & beverages",
         "food production",
         "glass, ceramics & concrete",
@@ -102,7 +102,7 @@ def start_actor_run(token):
     except requests.exceptions.RequestException as e:
         print(f"ERROR: Failed to start actor run: {e}")
         if hasattr(e, "response") and e.response is not None:
-            print(f"  Response: {e.response.text[:500]}")
+            print(f"  Response: {e.response.text[:3000]}")
         return None
 
     data = resp.json().get("data", {})
