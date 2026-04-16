@@ -12,7 +12,7 @@ import requests
 APIFY_BASE_URL = "https://api.apify.com/v2"
 ACTOR_ID = "code_crafter~leads-finder"
 POLL_INTERVAL = 30  # seconds
-POLL_TIMEOUT = 600  # 10 minutes
+POLL_TIMEOUT = 1800  # 30 minutes — Apify runs for 500 leads can exceed 15 min
 
 CSV_COLUMNS = [
     "Full Name",
@@ -81,7 +81,7 @@ DEFAULT_PAYLOAD = {
         "staffing & recruiting",
     ],
     "email_status": ["validated"],
-    "numberOfLeads": 500,
+    "numberOfLeads": 100,
 }
 
 
@@ -244,23 +244,22 @@ def main():
 
     token = get_api_token()
 
-    run_id = None
-    success = False
-
-    for attempt in range(1, 3):
-        if attempt == 2:
-            print("\n--- Retrying (attempt 2 of 2) ---\n")
-
+    # Start the actor run — retry only the START call if it errors (network/4xx
+    # on submit). Never retry after a run has actually started, because each
+    # new run consumes Apify credits. A polling timeout does NOT trigger retry.
+    run_id = start_actor_run(token)
+    if not run_id:
+        print("\n--- Retrying start (attempt 2 of 2) ---\n")
         run_id = start_actor_run(token)
-        if not run_id:
-            continue
+    if not run_id:
+        print("\nERROR: Could not start Apify run after 2 attempts.")
+        sys.exit(1)
 
-        success = poll_run_status(token, run_id)
-        if success:
-            break
-
+    success = poll_run_status(token, run_id)
     if not success:
-        print("\nERROR: Apify run failed after 2 attempts.")
+        print(f"\nERROR: Apify run {run_id} did not succeed. Check the run in")
+        print("the Apify console — it may still be running. Do NOT re-run this")
+        print("script until you confirm the run ended, or you'll burn credits.")
         sys.exit(1)
 
     raw_leads = fetch_results(token, run_id)
