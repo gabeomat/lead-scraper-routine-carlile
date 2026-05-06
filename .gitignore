@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+apify_data.json
+leads_*.csv
